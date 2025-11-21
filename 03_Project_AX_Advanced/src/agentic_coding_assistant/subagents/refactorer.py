@@ -25,31 +25,17 @@ Current date: {date}
 """
 
 
-def create_refactorer_subagent(
-    tools: list[Any],
-    date: str,
-) -> SubAgent:
+def create_refactorer_subagent(date: str) -> SubAgent:
     """Create refactorer sub-agent configuration for DeepAgent.
 
     Args:
-        tools: List of tool objects for the refactorer
         date: Current date string for prompt formatting
 
     Returns:
         SubAgent object for DeepAgent
     """
-    # Filter tools for refactorer: code generation, testing, filesystem
-    refactorer_tool_names = {
-        "refactor_code",
-        "generate_tests",
-        "run_tests",
-        "read_file",
-        "write_file",
-        "RefactorComplete",
-    }
-    refactorer_tools = [
-        t for t in tools if getattr(t, "name", None) in refactorer_tool_names
-    ]
+    # Refactorer uses filesystem tools only (provided by middleware)
+    # ls, read_file, write_file - no additional tools needed
 
     return SubAgent(
         **{
@@ -58,10 +44,11 @@ def create_refactorer_subagent(
                 """A specialized code refactoring agent with self-healing capabilities.
                 Use this agent when you need to refactor code while ensuring correctness through automated testing.
                 The refactorer generates tests, runs them, and applies self-healing if failures occur.
+                It reads existing code, generates improved versions, writes them to files, and verifies correctness.
                 Best for: Safe refactoring, code improvement with verification, test-driven development."""
             ),
             "system_prompt": REFACTORER_SYSTEM_PROMPT.format(date=date),
-            "tools": refactorer_tools,
+            "tools": [],  # Uses filesystem middleware tools only
             # Refactorer inherits default middleware (TodoList, Filesystem, etc.)
         }
     )

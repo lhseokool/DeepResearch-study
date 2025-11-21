@@ -1,231 +1,204 @@
-# Agentic Coding Assistant
+# Project AX Advanced
 
-Python 코드 영향도 분석을 위한 AI 기반 코딩 어시스턴트
+> DeepAgent 기반 계층적 멀티-에이전트 코드 분석 시스템
 
-## 프로젝트 개요
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![DeepAgents](https://img.shields.io/badge/framework-DeepAgents-green.svg)](https://github.com/deepagents/deepagents)
+[![LangGraph](https://img.shields.io/badge/powered%20by-LangGraph-orange.svg)](https://github.com/langchain-ai/langgraph)
 
-DeepAgent 개념(FileSystem, Planning, SubAgent)을 활용한 코드 영향도 분석 시스템입니다.
-LangGraph Platform을 통해 SPEED와 PRECISION 두 가지 분석 모드를 제공합니다.
+## 개요
 
-## 아키텍처
+Project AX Advanced는 DeepAgent 프레임워크를 사용하는 지능형 코드 분석 시스템입니다. 계층적 멀티-에이전트 아키텍처를 통해 코드 분석, 영향도 평가, 리팩토링, 문서 동기화를 수행합니다.
 
-```mermaid
-graph TB
-    A[LangGraph Platform<br/>Mode Selector] --> B[DeepAgent Coordinator<br/>Planning + FileSystem + SubAgent]
-    B --> C[SPEED Mode<br/>Tree-sitter + NetworkX]
-    B --> D[PRECISION Mode<br/>LSP/Pyright]
-    D -.->|Error/Fallback| E[Human-in-the-Loop]
-    E --> C
-    
-    style A fill:#bfdbfe,stroke:#1e3a8a
-    style B fill:#d1fae5,stroke:#065f46
-    style C fill:#fecaca,stroke:#b91c1c
-    style D fill:#fed7aa,stroke:#7c2d12
-    style E fill:#ddd6fe,stroke:#4c1d95
-```
+### 핵심 기능
 
-### 주요 컴포넌트
+- **🔍 심층 코드 분석**: 멀티-레벨 영향도 분석
+- **🤖 계층적 에이전트**: 분석, 리팩토링, 문서화 전문 서브에이전트
+- **🔄 자가 치유 리팩토링**: 자동 오류 감지 및 수정
+- **📚 문서 동기화**: 코드 변경에 따른 자동 문서 업데이트
+- **🎯 동적 서브에이전트**: 런타임에 특화 에이전트 생성
+- **💾 파일시스템 백엔드**: 세션 간 상태 보존
 
-1. **LangGraph Platform**: 분석 모드 선택 인터페이스
-2. **DeepAgent Coordinator**: Planning, FileSystem, SubAgent 통합 관리
-3. **SPEED Mode**: Tree-sitter 기반 빠른 정적 분석 (< 5초, 10k 라인 기준)
-4. **PRECISION Mode**: LSP 기반 정밀 분석 (Pyright)
-5. **Human-in-the-Loop**: Fallback 메커니즘
+## 빠른 시작
 
-## 주요 기능
-
-### 🎯 영향도 분석 (Impact Analysis)
-
-#### FR-IA-01: Dual-Mode Selection
-- SPEED 모드와 PRECISION 모드 선택 인터페이스 제공
-- LangGraph Platform을 통한 모드 전환
-
-#### FR-IA-02: Speed Mode Execution
-- Tree-sitter를 활용한 AST 파싱
-- NetworkX 그래프 기반 의존성 분석
-- 빌드 없이 5초 이내 분석 완료 (10k 라인 기준)
-
-#### FR-IA-03: Precision Mode Execution
-- LSP(Language Server Protocol) 기반 정확한 분석
-- Pyright를 활용한 컴파일러 수준의 참조 찾기
-- 타입 추론 및 상속 관계 정확한 해석
-
-#### FR-IA-04: Fallback Mechanism
-- PRECISION 모드 실행 실패 시 SPEED 모드 전환 제안
-- Human-in-the-Loop 구현
-
-### 🔧 자율 코딩 및 복구 (Autonomous Coding & Recovery)
-
-#### FR-AC-01: Refactoring Execution
-- 영향도 분석 결과 기반 자동 코드 수정
-- 사용자 요청 의도에 맞는 리팩토링 실행
-
-#### FR-AC-02: Self-Healing Loop
-- 컴파일 에러/테스트 실패 시 자동 수정
-- 최대 3회 재시도로 자동 복구
-- 실패 시 사용자에게 상세 히스토리 제공
-
-#### FR-AC-03: Test Generation
-- 변경된 코드에 대한 단위 테스트 자동 생성
-- pytest/unittest 프레임워크 지원
-- 자동 테스트 실행 및 검증
-
-### 📚 문서화 동기화 (Documentation Sync)
-
-#### FR-DS-01: Automatic Documentation Sync
-- 코드 변경 시 관련 문서 자동 업데이트 감지
-- Docstring, README, Swagger/API 문서 동기화
-- 변경안 제시 및 Human-in-the-Loop 승인
-
-### 📂 파일 시스템 심층 탐색 (Deep File System)
-
-#### FR-FS-01: Contextual Exploration
-- DeepAgents Library의 FileSystemBackend 활용
-- `ls`, `read_file`로 프로젝트 컨텍스트 자동 파악
-
-#### FR-FS-02: Pattern-based Search
-- `glob` 패턴 매칭으로 파일 검색
-- `grep` 문자열 검색으로 코드 위치 식별
-
-#### FR-FS-03: Precise Code Modification
-- `edit_file`로 정확한 문자열 치환
-- `write_file`로 새 파일 생성
-
-#### FR-FS-04: Large Output Handling
-- 대용량 파일 자동 감지 및 캐싱
-- LLM 기반 요약 생성
-- SubAgent 호출 및 Human-in-the-Loop
-
-## 설치 및 실행
-
-### 1. 환경 설정
+### 설치
 
 ```bash
 # 저장소 클론
 git clone <repository-url>
-cd project-ax-advanced
+cd 03_Project_AX_Advanced
 
-# 가상환경 생성 및 활성화
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+# uv로 의존성 설치
+uv sync
 
-# 의존성 설치
+# 또는 pip 사용
 pip install -e .
-
-# OpenRouter API 키 설정
-cp .env.example .env
-# .env 파일을 편집하여 OPENROUTER_API_KEY 설정
 ```
 
-## 사용 방법
+### 환경 설정
 
-### 1. LangGraph 서버 실행
+`.env` 파일 생성:
 
-```bash
-langgraph dev
+```env
+OPENAI_API_KEY=your_key_here
+ANTHROPIC_API_KEY=your_key_here
+WORKSPACE_ROOT=./workspace
 ```
 
-### 2. 영향도 분석 실행
+### 기본 사용법
 
 ```python
-from agentic_coding_assistant import ImpactAnalyzer
+from agentic_coding_assistant.graph import create_deep_analysis_agent, run_analysis
 
-# SPEED 모드
-analyzer = ImpactAnalyzer(mode="SPEED")
-results = analyzer.analyze(
-    file_path="path/to/file.py",
-    symbol_name="function_name"
+# 에이전트 생성
+agent = await create_deep_analysis_agent(
+    tools=[analyze_code_tool, refactor_tool],
+    model="openai:gpt-4.1",
+    enable_self_healing=True,
+    enable_documentation_sync=True,
 )
 
-# PRECISION 모드
-analyzer = ImpactAnalyzer(mode="PRECISION")
-results = analyzer.analyze(
-    file_path="path/to/file.py",
-    symbol_name="function_name"
+# 분석 실행
+result = await run_analysis(
+    request="함수 X 변경의 영향도 분석",
+    tools=[analyze_code_tool],
+    model="anthropic:claude-sonnet-4-5-20250929",
 )
+
+# 결과 확인
+final_report = result["files"]["/output/final_report.md"]["content"]
+print(final_report)
 ```
+
+## 아키텍처
+
+### 계층적 구조
+
+```
+DeepCodeAnalysisAgent (메인 오케스트레이터)
+├── Analyzer SubAgent (코드 분석 및 영향도 감지)
+├── Refactorer SubAgent (자가 치유 리팩토링)
+├── Documenter SubAgent (문서 동기화)
+└── Dynamic SubAgents (런타임 생성 전문가)
+```
+
+### 핵심 컴포넌트
+
+1. **Orchestrator**: 워크플로우 관리 및 서브에이전트 조율
+2. **SubAgents**: 특화된 작업 수행 에이전트
+3. **Skills Registry**: 추상적 스킬과 구체적 도구 매핑
+4. **Filesystem Backend**: 상태 관리용 가상 파일시스템
+5. **Dynamic Agent Factory**: 온디맨드 전문 에이전트 생성
+
+### 자동 미들웨어
+
+DeepAgent는 다음 미들웨어를 자동으로 주입합니다:
+
+- **TodoListMiddleware**: 계획 수립 및 추적
+- **FilesystemMiddleware**: 파일 작업 (ls, read_file, write_file)
+- **SubAgentMiddleware**: 서브에이전트 동적 할당
+- **SummarizationMiddleware**: 컨텍스트 압축
+- **AnthropicPromptCachingMiddleware**: 비용 최적화
+- **PatchToolCallsMiddleware**: 도구 호출 수정
 
 ## 프로젝트 구조
 
 ```
-src/agentic_coding_assistant/
-├── agents/          # DeepAgent 구현
-├── analyzers/       # SPEED/PRECISION 분석기
-├── models/          # 데이터 모델
-├── nodes/           # LangGraph 노드
-├── prompts/         # LLM 프롬프트
-├── tools/           # 분석 도구
-└── utils/           # 유틸리티 함수
+03_Project_AX_Advanced/
+├── src/agentic_coding_assistant/
+│   ├── graph.py              # 메인 에이전트 생성
+│   ├── state.py              # 상태 정의
+│   ├── configuration.py      # 설정 관리
+│   ├── prompts/              # 시스템 프롬프트
+│   │   └── orchestrator.py   # 오케스트레이터 프롬프트
+│   ├── subagents/            # 서브에이전트 설정
+│   │   ├── analyzer.py       # 분석 에이전트
+│   │   ├── refactorer.py     # 리팩토링 에이전트
+│   │   └── documenter.py     # 문서화 에이전트
+│   ├── skills/               # 스킬 레지스트리
+│   │   ├── registry.py       # 스킬-도구 매핑
+│   │   └── tool_collections.py
+│   ├── tools/                # 동적 에이전트 도구
+│   │   ├── subagent_tools.py # SpawnSubAgent 도구
+│   │   └── dynamic.py        # 동적 에이전트 팩토리
+│   └── utils/                # 유틸리티 함수
+│       └── workspace.py      # 워크스페이스 관리
+├── docs/                     # 문서
+├── examples/                 # 사용 예시
+└── tests/                    # 테스트
+```
+
+## 주요 기능
+
+### 1. 코드 분석
+
+- 의존성 추적을 포함한 정적 분석
+- 코드 변경 영향도 평가
+- 멀티 파일 분석 지원
+
+### 2. 자가 치유 리팩토링
+
+- 자동 테스트 생성
+- 반복적 오류 수정
+- 변경 적용 전 검증
+
+### 3. 문서 동기화
+
+- 코드-문서 불일치 감지
+- 업데이트된 문서 생성
+- 코드베이스 전체 일관성 유지
+
+### 4. 동적 서브에이전트
+
+- 런타임에 전문 에이전트 생성
+- 스킬 기반 도구 할당
+- 각 에이전트별 격리된 워크스페이스
+
+## 워크스페이스 구조
+
+```
+workspace/
+├── main_agent/              # 메인 에이전트 워크스페이스
+│   ├── status/
+│   │   ├── current_stage.txt
+│   │   └── analysis_plan.md
+│   └── output/
+│       ├── analysis_results/
+│       ├── refactoring_results/
+│       └── final_report.md
+├── analyzer_01/             # 개별 분석기 워크스페이스
+└── test_analyzer/           # 동적 서브에이전트 워크스페이스
+```
+
+## 문서
+
+- [아키텍처 상세](DEEPAGENT_ARCHITECTURE_UPDATE.md)
+- [빠른 시작](docs/QUICKSTART.md)
+- [고급 기능](docs/ADVANCED_FEATURES.md)
+- [구현 가이드](docs/IMPLEMENTATION.md)
+
+## 예시
+
+```bash
+# 예시 실행
+python examples/deep_agent_demo.py
+python examples/complete_workflow_demo.py
+python examples/self_healing_demo.py
 ```
 
 ## 기술 스택
 
-- **DeepAgents**: Planning, FileSystem, SubAgent 구현
-- **LangGraph**: 워크플로우 오케스트레이션
-- **Tree-sitter**: AST 파싱 (SPEED 모드)
-- **NetworkX**: 그래프 분석
-- **Pyright/LSP**: 정밀 코드 분석 (PRECISION 모드)
-- **FastAPI**: API 서버
+- **프레임워크**: DeepAgents, LangGraph
+- **LLM**: OpenAI GPT-4, Anthropic Claude
+- **언어**: Python 3.11+
+- **패키지 관리**: uv
 
-## 참고 자료
-
-- [DeepAgents Blog Post](https://blog.langchain.com/doubling-down-on-deepagents/)
-- [DeepAgents Documentation](https://docs.langchain.com/oss/python/deepagents/overview)
-- [LangGraph Documentation](https://langchain-ai.github.io/langgraph/)
-
-## 문서
-
-- **아키텍처 설계**: `docs/architecture.excalidraw`, `docs/architecture_detailed.md`
-- **구현 세부사항**: `docs/IMPLEMENTATION.md`
-- **빠른 시작**: `docs/QUICKSTART.md`
-- **프로젝트 요약**: `docs/PROJECT_SUMMARY.md`
-- **고급 기능**: `docs/ADVANCED_FEATURES.md` 🆕
-- **DeepAgent 통합**: `docs/DEEPAGENT_INTEGRATION.md` 🆕
-- **예제**: 
-  - `examples/self_healing_demo.py` - 자율 코딩 및 복구
-  - `examples/filesystem_demo.py` - 파일 시스템 탐색
-  - `examples/documentation_demo.py` - 문서화 동기화
-  - `examples/complete_workflow_demo.py` - 전체 워크플로우
-  - `examples/deep_agent_demo.py` - DeepAgent 프레임워크 사용 🆕
-
-## 요구사항 충족 현황
-
-### ✅ 설계 요구사항
-- Excalidraw 아키텍처 다이어그램 제공 (`docs/architecture.excalidraw`)
-- 상세 Mermaid 다이어그램 제공 (`README.md`, `docs/architecture_detailed.md`)
-
-### ✅ 구현 요구사항
-
-#### 영향도 분석 (Impact Analysis)
-- **DeepAgent 패턴**: Planning, FileSystem, SubAgent 구현
-- **프로그래밍 언어**: Python 전용
-- **FR-IA-01**: LangGraph Platform 기반 Dual-Mode Selection
-- **FR-IA-02**: Tree-sitter + NetworkX 기반 SPEED 모드 (< 5초)
-- **FR-IA-03**: LSP/Pyright 기반 PRECISION 모드
-- **FR-IA-04**: Human-in-the-Loop Fallback 메커니즘
-
-#### 자율 코딩 및 복구 (Autonomous Coding) 🆕
-- **FR-AC-01**: 영향도 분석 기반 Refactoring 실행
-- **FR-AC-02**: Self-Healing Loop (최대 3회 재시도)
-- **FR-AC-03**: 단위 테스트 자동 생성 및 실행
-
-#### 문서화 동기화 (Documentation Sync) 🆕
-- **FR-DS-01**: Docstring, README, Swagger 문서 자동 동기화
-
-#### 파일 시스템 탐색 (File System) 🆕
-- **✨ create_deep_agent 사용**: DeepAgent 패턴 자동 적용
-- **FR-FS-02**: glob/grep 기반 패턴 검색
-- **FR-FS-03**: edit_file/write_file로 정확한 코드 수정
-- **FR-FS-04**: 대용량 파일 처리 및 Human-in-the-Loop
-
-## 라이센스
+## 라이선스
 
 MIT License
 
-## 기여
+## 감사의 말
 
-Pull Requests와 Issues를 환영합니다!
-
-## 작성자
-
-Agentic Coding Assistant Team
+- [DeepAgents](https://github.com/deepagents/deepagents) 프레임워크 사용
+- [LangGraph](https://github.com/langchain-ai/langgraph) 기반
+- [DeepResearch](https://github.com/deepresearch/deepresearch) 아키텍처 참조

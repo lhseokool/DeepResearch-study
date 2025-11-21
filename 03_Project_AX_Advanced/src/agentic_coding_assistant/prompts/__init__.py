@@ -1,5 +1,7 @@
 """Prompt templates for LLM interactions."""
 
+from .orchestrator import format_orchestrator_prompt
+
 PLANNING_PROMPT = """
 You are an expert code analyst planning an impact analysis task.
 
@@ -46,6 +48,7 @@ Provide a brief, user-friendly summary.
 """
 
 __all__ = [
+    "format_orchestrator_prompt",
     "PLANNING_PROMPT",
     "FALLBACK_DECISION_PROMPT",
     "RESULT_SUMMARY_PROMPT",

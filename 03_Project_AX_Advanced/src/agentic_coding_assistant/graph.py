@@ -1,4 +1,4 @@
-"""LangGraph workflow for impact analysis using DeepAgent framework."""
+"""DeepAgent-based workflow for code analysis and impact assessment."""
 
 from datetime import datetime
 from typing import Any, Optional
@@ -7,90 +7,49 @@ from deepagents import create_deep_agent
 from deepagents.backends import FilesystemBackend
 from langchain_core.runnables import RunnableConfig
 from langgraph.checkpoint.memory import MemorySaver
-from langgraph.graph import END, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
 from .configuration import DeepAgentConfiguration
-from .nodes.analysis_nodes import (
-    AnalysisState,
-    decide_mode,
-    execute_analysis,
-    handle_fallback,
-    validate_input,
+from .prompts.orchestrator import format_orchestrator_prompt
+from .subagents import (
+    create_analyzer_subagent,
+    create_documenter_subagent,
+    create_refactorer_subagent,
 )
-from .subagents import create_analyzer_subagent
 from .utils.workspace import get_agent_workspace
 
 
-def should_fallback(state: AnalysisState) -> str:
-    """Determine if fallback is needed.
-
-    Args:
-        state: Current workflow state
+def get_today_str() -> str:
+    """Format current date for prompts.
 
     Returns:
-        Next node name
+        Human-readable date string like 'Mon Jan 15, 2024'
     """
-    if state.get("should_fallback", False):
-        return "handle_fallback"
-    return END
+    now = datetime.now()
+    return f"{now:%a} {now:%b} {now.day}, {now:%Y}"
 
 
-def create_analysis_graph() -> StateGraph:
-    """Create the impact analysis workflow graph.
-
-    Returns:
-        Compiled StateGraph for analysis workflow
-    """
-    # Create workflow graph
-    workflow = StateGraph(AnalysisState)
-
-    # Add nodes
-    workflow.add_node("validate_input", validate_input)
-    workflow.add_node("decide_mode", decide_mode)
-    workflow.add_node("execute_analysis", execute_analysis)
-    workflow.add_node("handle_fallback", handle_fallback)
-
-    # Define edges
-    workflow.set_entry_point("validate_input")
-
-    workflow.add_edge("validate_input", "decide_mode")
-    workflow.add_edge("decide_mode", "execute_analysis")
-
-    # Conditional edge for fallback
-    workflow.add_conditional_edges(
-        "execute_analysis",
-        should_fallback,
-        {
-            "handle_fallback": "handle_fallback",
-            END: END,
-        },
-    )
-
-    workflow.add_edge("handle_fallback", END)
-
-    return workflow.compile()
-
-
-# Create the compiled graph
-analysis_graph = create_analysis_graph()
-
-
-def create_deep_analysis_agent(
+async def create_deep_analysis_agent(
     tools: list[Any],
     *,
     model: str = "openai:gpt-4.1",
+    max_analysis_iterations: int = 10,
+    enable_self_healing: bool = True,
+    enable_documentation_sync: bool = True,
     config: Optional[RunnableConfig] = None,
     checkpointer=None,
 ) -> CompiledStateGraph:
-    """Create a DeepAgent-based analysis agent.
+    """Create a DeepAgent-based code analysis agent.
 
-    This creates an agent using the DeepAgent framework with analyzer sub-agents
-    for comprehensive code analysis and impact detection.
+    This creates an agent using the DeepAgent framework with specialized sub-agents
+    for code analysis, refactoring, and documentation synchronization.
 
     Args:
         tools: List of tool objects for analysis
         model: LLM model identifier (format: provider:model)
+        max_analysis_iterations: Maximum analysis iterations before finalization
+        enable_self_healing: Enable self-healing agent for code generation
+        enable_documentation_sync: Enable documentation synchronization
         config: Optional runtime configuration
         checkpointer: Checkpointer for session persistence (default: MemorySaver)
 
@@ -102,33 +61,46 @@ def create_deep_analysis_agent(
         checkpointer = MemorySaver()
 
     # Get current date for prompts
-    now = datetime.now()
-    date = f"{now:%a} {now:%b} {now.day}, {now:%Y}"
+    date = get_today_str()
 
-    # Create analyzer sub-agent configuration
+    # Register tools with the global registry
+    from .skills.registry import registry
+
+    for tool in tools:
+        registry.register_tool(tool)
+
+    # Add SpawnSubAgent tool
+    from .tools.subagent_tools import SpawnSubAgent
+
+    spawn_tool = SpawnSubAgent()
+    tools.append(spawn_tool)
+
+    # Create sub-agent configurations
     analyzer_config = create_analyzer_subagent(tools=tools, date=date)
 
     # Sub-agents list
     subagents = [analyzer_config]
 
-    # Orchestrator system prompt
-    orchestrator_prompt = f"""You are an intelligent code analysis agent.
+    # Optionally add refactorer
+    if enable_self_healing:
+        refactorer_config = create_refactorer_subagent(date=date)
+        subagents.append(refactorer_config)
 
-Your role is to:
-1. Understand user requests for code analysis and impact assessment
-2. Delegate analysis tasks to specialized analyzer sub-agents
-3. Coordinate analysis across multiple files and symbols
-4. Synthesize results into actionable insights
+    # Optionally add documenter
+    if enable_documentation_sync:
+        documenter_config = create_documenter_subagent(date=date)
+        subagents.append(documenter_config)
 
-Available sub-agents:
-- analyzer: Deep code analysis and impact detection
+    # Format orchestrator system prompt
+    orchestrator_prompt = format_orchestrator_prompt(
+        date=date,
+        max_analysis_iterations=max_analysis_iterations,
+        enable_self_healing=enable_self_healing,
+        enable_documentation_sync=enable_documentation_sync,
+    )
 
-Current date: {date}
-
-Use the analyzer sub-agent to perform detailed code analysis.
-Provide clear, actionable insights based on the analysis results.
-Handle fallback scenarios gracefully when precision analysis is not available.
-"""
+    # Update prompt to mention dynamic sub-agents
+    orchestrator_prompt += "\n\nYou can also spawn dynamic sub-agents using the 'spawn_subagent' tool to handle specific complex tasks autonomously."
 
     # Create DeepAgent
     agent = create_deep_agent(
@@ -137,12 +109,73 @@ Handle fallback scenarios gracefully when precision analysis is not available.
         system_prompt=orchestrator_prompt,
         subagents=subagents,
         backend=lambda rt: FilesystemBackend(
-            root_dir=get_agent_workspace("analysis_agent"),
+            root_dir=get_agent_workspace("main_agent"),
             virtual_mode=True,
         ),
         checkpointer=checkpointer,
-        name="CodeAnalysisAgent",
+        name="DeepCodeAnalysisAgent",
         debug=True,
+        # Middleware is automatically configured by create_deep_agent:
+        # - TodoListMiddleware (planning)
+        # - FilesystemMiddleware (file operations)
+        # - SubAgentMiddleware (dynamic delegation)
+        # - SummarizationMiddleware (context compression)
+        # - AnthropicPromptCachingMiddleware (cost optimization)
+        # - PatchToolCallsMiddleware (tool call fixes)
     )
 
     return agent
+
+
+# Example usage function
+async def run_analysis(
+    request: str,
+    tools: list[Any],
+    *,
+    model: str = "anthropic:claude-sonnet-4-5-20250929",
+    thread_id: str = "default",
+    max_analysis_iterations: int = 10,
+    enable_self_healing: bool = True,
+    enable_documentation_sync: bool = True,
+    checkpointer=None,
+) -> dict[str, Any]:
+    """Run code analysis using the DeepAgent-based analysis agent.
+
+    Args:
+        request: User's analysis request
+        tools: Tools available for analysis
+        model: LLM model to use
+        thread_id: Thread identifier for state persistence
+        max_analysis_iterations: Maximum analysis iterations
+        enable_self_healing: Enable self-healing for code generation
+        enable_documentation_sync: Enable documentation sync
+        checkpointer: Checkpointer for session persistence (default: MemorySaver)
+
+    Returns:
+        Final agent state containing messages and filesystem state
+    """
+    # Create agent
+    agent = await create_deep_analysis_agent(
+        tools=tools,
+        model=model,
+        max_analysis_iterations=max_analysis_iterations,
+        enable_self_healing=enable_self_healing,
+        enable_documentation_sync=enable_documentation_sync,
+        checkpointer=checkpointer,
+    )
+
+    # Runtime configuration
+    config = {
+        "configurable": {
+            "thread_id": thread_id,
+        },
+        "recursion_limit": 100,  # High limit for complex multi-agent workflows
+    }
+
+    # Execute agent
+    result = await agent.ainvoke(
+        {"messages": [{"role": "user", "content": request}]},
+        config=config,
+    )
+
+    return result

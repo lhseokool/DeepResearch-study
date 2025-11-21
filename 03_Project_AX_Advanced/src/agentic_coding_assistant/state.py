@@ -47,6 +47,10 @@ class RefactorCode(BaseModel):
     )
 
 
+class RefactorComplete(BaseModel):
+    """Call this tool to indicate that refactoring is complete."""
+
+
 class SyncDocumentation(BaseModel):
     """Call this tool to synchronize documentation with code changes."""
 
@@ -81,13 +85,25 @@ class ClarifyWithUser(BaseModel):
     )
 
 
+class AnalysisGoal(BaseModel):
+    """Analysis goal and plan to guide the analysis workflow."""
+
+    analysis_brief: str = Field(
+        description="Analysis goal that will be used to guide the workflow.",
+    )
+
+
 ###################
 # State Definitions
 ###################
 
 
 def override_reducer(current_value, new_value):
-    """Reducer function to allow overriding values in state."""
+    """Reducer function to allow overriding values in state.
+    
+    This enables both appending to lists and completely replacing them
+    by using a special dict format: {"type": "override", "value": new_list}
+    """
     if isinstance(new_value, dict) and new_value.get("type") == "override":
         return new_value.get("value", new_value)
     else:
