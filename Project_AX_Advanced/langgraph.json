@@ -1,0 +1,7 @@
+{
+  "dependencies": ["."],
+  "graphs": {
+    "impact_analysis": "./src/agentic_coding_assistant/graph.py:analysis_graph"
+  },
+  "env": ".env"
+}

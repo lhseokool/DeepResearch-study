@@ -1,0 +1,68 @@
+[project]
+name = "project-ax-advanced"
+version = "0.2.0"
+description = "Agentic Coding Assistant for impact analysis and autonomous refactoring with DeepAgents"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "ruff>=0.14.5",
+    "deepagents>=0.2.5",
+    "deepeval>=3.7.0",
+    "jupyter>=1.1.1",
+    "langchain>=1.0.2",
+    "langchain-community>=0.4.1",
+    "langchain-mcp-adapters>=0.1.12",
+    "langchain-openai>=1.0.1",
+    "langchain-tavily>=0.2.12",
+    "langchain-teddynote>=0.5.4",
+    "langfuse>=3.9.3",
+    "langgraph>=1.0.1",
+    "langgraph-checkpoint-postgres>=3.0.0",
+    "langgraph-checkpoint-redis>=0.1.2",
+    "langgraph-cli[inmem]>=0.4.7",
+    "matplotlib>=3.10.7",
+    "mcp>=1.21.0",
+    "mem0ai>=1.0.0",
+    "notebook>=7.4.7",
+    "pandas>=2.3.3",
+    "python-dotenv>=1.2.1",
+    "tree-sitter>=0.23.2",
+    "tree-sitter-python>=0.23.6",
+    "networkx>=3.4.2",
+    "pygls>=1.3.1",
+    "pyright>=1.1.391",
+    "fastapi>=0.115.6",
+    "uvicorn>=0.34.0",
+    "ipykernel>=7.1.0",
+]
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+# 검사 대상 경로
+src = ["src", "tests"]
+
+[tool.ruff.format]
+# 기본 포매터 설정(black 유사 스타일)
+
+[tool.ruff.lint]
+# 사용할 규칙셋
+select = [
+    "E",   # pycodestyle (PEP8)
+    "F",   # pyflakes
+    "D",   # pydocstyle (Docstring)
+]
+
+ignore = [
+    "D100",  # 모듈 docstring 없음 허용
+    "D104",  # 패키지 docstring 없음 허용
+]
+
+[tool.ruff.lint.pydocstyle]
+# Google 스타일 Docstring
+convention = "google"
